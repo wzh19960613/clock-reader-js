@@ -60,7 +60,7 @@ export declare function week_en_full(time: Date): string;
 export declare function am_pm_en(time: Date): "AM" | "PM";
 export type DateFormatter = (time: Date) => string | number;
 export declare const clockReader: (strs: TemplateStringsArray, ...exps: any[]) => DynTemplate<DateFormatter>;
-export declare function compile(clockReader: DynTemplate<DateFormatter>, timeZone?: number): (time: Date | number) => string;
+export declare function compile(template: DynTemplate<DateFormatter>, timeZone?: number): (time: Date | number) => string;
 
 export {
 	DynTemplate,

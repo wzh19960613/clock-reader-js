@@ -13,7 +13,7 @@ Compared to these libraries, clock-reader uses JavaScript's native [Date object]
 - Small size: compressed size less than 3KB
 - Concise and unambiguous: no need to learn complex template and escape syntax, directly use JavaScript's [template literals](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Template_literals)
 - Fast: about 4 times faster than `moment.js` and 10 times faster than `date-fns`. Test it [here](https://codepen.io/wzh19960613/pen/PoMOXLX)
-- Flexible: functional design, easy to implement various custom requirements
+- Flexible: functional design, easy to implement and use custom components
 
 ## Installation
 
@@ -73,52 +73,43 @@ console.log(isAM(o))
 
 ```javascript
 import {
-    week_en, week_en_full,
     month_en, month_en_full,
-    m_d_y_en, d_m_y_en,
-    am_pm_en,
+    m_d_y_en,
+    d_m_y_en,
+    week_en, week_en_full, am_pm_en
 } from 'clock-reader'
 
 const o = new Date('1970-01-02T03:04:05.006Z')
 
-console.log(week_en(o), week_en_full(o))    // Fri Friday
-console.log(month_en(o), month_en_full(o))  // Jan January
-console.log(m_d_y_en(o))                    // Jan 2, 1970
-console.log(d_m_y_en(o))                    // 2 Jan 1970
-console.log(am_pm_en(o))                    // AM
+console.log(month_en(o), month_en_full(o))              // Jan January
+console.log(m_d_y_en(o))                                // Jan 2, 1970
+console.log(d_m_y_en(o))                                // 2 Jan 1970
+console.log(week_en(o), week_en_full(o), am_pm_en(o))   // Fri Friday AM
 ```
 
 ### Chinese Components
 
 ```javascript
 import {
-    year_cn,
-    month_cn, month_cn_cc,
-    date_cn,
-    hour_cn, hour12_cn,
-    minute_cn,
-    sec_cn,
-    msec_cn,
-    week_cn,
-    am_pm_cn,
+    year_cn, month_cn, date_cn,
+    month_cn_cc, 
+    hour_cn, hour12_cn, minute_cn, sec_cn, msec_cn,
+    y_m_d_cn, h_m_s_cn,
+    week_cn, am_pm_cn,
 } from 'clock-reader'
 
 const o = new Date('1970-01-02T03:04:05.006Z')
 
-console.log(year_cn(o))                     // 一九七〇
-console.log(month_cn(o), month_cn_cc(o))    // 一 正
-console.log(date_cn(o))                     // 二
-console.log(hour_cn(o), hour12_cn(o))       // 三 三
-console.log(minute_cn(o))                   // 四
-console.log(sec_cn(o))                      // 五
-console.log(msec_cn(o))                     // 六
-console.log(week_cn(o))                     // 五
-console.log(am_pm_cn(o))                    // 上午
+console.log(year_cn(o), month_cn(o), date_cn(o)) // 一九七〇 一 二
+console.log(month_cn_cc(o))  // Same as `month_cn`, but Jan will be '正' and Dec will be '腊'
+console.log(hour_cn(o), hour12_cn(o), minute_cn(o), sec_cn(o), msec_cn(o))  // 三 三 四 五 六
+console.log(y_m_d_cn(o), h_m_s_cn(o))            // 一九七〇年一月二日 三时四分五秒
+console.log(week_cn(o), am_pm_cn(o))             // 五 上午
 ```
 
 ### Custom Components
 
-Any function that takes a Date object as a parameter and returns a value convertible to string can be passed as a component into the template. To ensure correct results, custom components should use methods with 'UTC' when processing Date objects, rather than methods related to the local timezone.
+Any function that takes a Date object as a parameter and returns a value convertible to string can be passed as a component into the template. Custom components should use methods with 'UTC' when processing Date objects, rather than methods related to the local timezone and no need to worry about the timezone.
 
 ```javascript
 import { compile, clockReader, y_m_d, month_en_full } from 'clock-reader'
@@ -150,7 +141,7 @@ import {
     zZeroOrNot, zIntOrNot
 } from 'clock-reader'
 
-console.log(localZ())                   // A number equal to local timezone in hours
+console.log(localZ())                   // A number is equal to the local timezone in hours
 console.log(parseZ(-7.5))               // { sign: '-', zHour: 7, zMinute: 30 }
 console.log(sz(0), sz(+8), sz(-7.5))    // +0 +8 -7.5 
 console.log(szzzz(0), szzzz(+8), szzzz(-7.5))                                   // +0000 +0800 -0730
@@ -166,23 +157,29 @@ const fn2 = zIntOrNot(szz, szz_zz)      // fn2(integer) === szz(...), fn2(else) 
 
 ```javascript
 import { compile, clockReader, hh } from 'clock-reader'
+
 const h12 = 12 * 60 * 60 * 1000
 console.log(compile(clockReader`${hh}`, 0)(h12))    // 12
 console.log(compile(clockReader`${hh}`, +8)(h12))   // 20
 console.log(compile(clockReader`${hh}`)(h12))       // Local timezone + 12
 ```
 
-2. When using components individually, components always ignore the timezone. That is, regardless of the timezone, components always process time according to UTC+0. So use dynamic templates when process time according to a specific timezone or local timezone.
+2. When using components individually, components always ignore timezones. Regardless of the local timezone or the timezone of the Date object itself, components always process time according to UTC+0. Therefore, use dynamic templates when need to process time according to a specific timezone or local timezone.
 
 ```javascript
-import { hh } from 'clock-reader'
-console.log(hh(new Date('1970-01-01T12:00:00Z')))       // 12
-console.log(hh(new Date('1970-01-01T12:00:00+0800')))   // 04
+import { compile, clockReader, hh } from '.'
+
+const t = new Date('1970-01-01T12:00:00+0800')  // 04:00:00Z
+console.log(hh(t))                              // 04
+console.log(compile(clockReader`${hh}`, +8)(t)) // 12
+console.log(compile(clockReader`${hh}`)(t))     // Local timezone + 4
 ```
 
-3. Dynamic templates do not consider the timezone of the Date object itself, so if timezone-related content is included in the template, the function should be called rather than directly passing in the function.
+3. Dynamic templates do not consider the timezone of the Date object itself. If timezone-related content is included in the template, the function should be called rather than directly passing the function.
 
 ```javascript
 import { compile, clockReader, szzzz } from 'clock-reader'
-console.log(compile(clockReader`Given timezone: ${szzzz(+8)}, Local timezone: ${szzzz()}`, +8)(0))
+
+const tz = +8
+console.log(compile(clockReader`Given timezone: ${szzzz(tz)}, Local timezone: ${szzzz()}`, tz)(0))
 ```

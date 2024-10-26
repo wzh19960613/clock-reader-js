@@ -8,12 +8,12 @@
 
 时间格式化是一个常见需求。目前常用的库有： [moment.js](https://momentjs.com/)、[dayjs](https://day.js.org/)、[date-fns](https://date-fns.org/)。
 
-相比于这些库，clock-reader 使用 JavaScript 原生的 [Date对象](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date) 和 [模板字符串](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Template_literals) 语法，有以下优势：
+相比于这些库，clock-reader 仅使用 JavaScript 原生的 [Date对象](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Global_Objects/Date) 和 [模板字符串](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Template_literals) 语法，具有以下优势：
 
 - 体积小：压缩体积小于 3KB
 - 简洁、无歧义：无需学习复杂的模板与逃逸语法，直接使用 JavaScript 的[模板字符串](https://developer.mozilla.org/docs/Web/JavaScript/Reference/Template_literals)
 - 快速：速度约为`moment.js` 的 4 倍，`date-fns` 的 10 倍。点击此处[测试](https://codepen.io/wzh19960613/pen/PoMOXLX)
-- 灵活：函数化设计，可以轻松实现各种自定义需求
+- 灵活：函数化设计，可以轻松实现并使用自定义组件
 
 ## 安装
 
@@ -73,53 +73,44 @@ console.log(isAM(o))
 
 ```javascript
 import {
-    week_en, week_en_full,
     month_en, month_en_full,
-    m_d_y_en, d_m_y_en,
-    am_pm_en,
+    m_d_y_en,
+    d_m_y_en,
+    week_en, week_en_full, am_pm_en
 } from 'clock-reader'
 
 const o = new Date('1970-01-02T03:04:05.006Z')
 
-console.log(week_en(o), week_en_full(o))    // Fri Friday
-console.log(month_en(o), month_en_full(o))  // Jan January
-console.log(m_d_y_en(o))                    // Jan 2, 1970
-console.log(d_m_y_en(o))                    // 2 Jan 1970
-console.log(am_pm_en(o))                    // AM
+console.log(month_en(o), month_en_full(o))              // Jan January
+console.log(m_d_y_en(o))                                // Jan 2, 1970
+console.log(d_m_y_en(o))                                // 2 Jan 1970
+console.log(week_en(o), week_en_full(o), am_pm_en(o))   // Fri Friday AM
 ```
 
 ### 中文组件
 
 ```javascript
 import {
-    year_cn,
-    month_cn, month_cn_cc,
-    date_cn,
-    hour_cn, hour12_cn,
-    minute_cn,
-    sec_cn,
-    msec_cn,
-    week_cn,
-    am_pm_cn,
+    year_cn, month_cn, date_cn,
+    month_cn_cc, 
+    hour_cn, hour12_cn, minute_cn, sec_cn, msec_cn,
+    y_m_d_cn, h_m_s_cn,
+    week_cn, am_pm_cn,
 } from 'clock-reader'
 
 const o = new Date('1970-01-02T03:04:05.006Z')
 
-console.log(year_cn(o))                     // 一九七〇
-console.log(month_cn(o), month_cn_cc(o))    // 一 正
-console.log(date_cn(o))                     // 二
-console.log(hour_cn(o), hour12_cn(o))       // 三 三
-console.log(minute_cn(o))                   // 四
-console.log(sec_cn(o))                      // 五
-console.log(msec_cn(o))                     // 六
-console.log(week_cn(o))                     // 五
-console.log(am_pm_cn(o))                    // 上午
+console.log(year_cn(o), month_cn(o), date_cn(o)) // 一九七〇 一 二
+console.log(month_cn_cc(o))                      // 与 month_cn 相同，但一月返回 '正'，十二月返回 '腊'
+console.log(hour_cn(o), hour12_cn(o), minute_cn(o), sec_cn(o), msec_cn(o))  // 三 三 四 五 六
+console.log(y_m_d_cn(o), h_m_s_cn(o))            // 一九七〇年一月二日 三时四分五秒
+console.log(week_cn(o), am_pm_cn(o))             // 五 上午
 ```
 
 ### 自定义组件
 
-可以将任意的 参数为 Date 对象、返回值可转换为字符串 的函数作为组件传入模板中。  
-为保证结果正确，自定义组件在处理 Date 对象时，应使用带 `UTC` 字样的方法而非与本地时区有关的方法。
+可以将任何接受 Date 对象作为参数、且返回值可转换为字符串的函数作为组件传入模板中。  
+自定义组件在处理 Date 对象时，应使用带 `UTC` 字样的方法而非本地时区方法，且无需担心时区问题。
 
 ```javascript
 import { compile, clockReader, y_m_d_cn, month_cn } from 'clock-reader'
@@ -167,23 +158,29 @@ const fn2 = zIntOrNot(szz, szz_zz)      // fn2(整数) === szz(...), fn2(非整�
 
 ```javascript
 import { compile, clockReader, hh } from 'clock-reader'
+
 const h12 = 12 * 60 * 60 * 1000
 console.log(compile(clockReader`${hh}`, 0)(h12))    // 12
 console.log(compile(clockReader`${hh}`, +8)(h12))   // 20
 console.log(compile(clockReader`${hh}`)(h12))       // 本地时区 + 12
 ```
 
-2. 当单独使用组件时，组件始终忽略时区。即无论时区如何，组件始终按照 UTC+0 时间来处理。所以如果需要按照特定时区或本地时区来处理时间，请使用动态模板。
+2. 当单独使用组件时，组件始终忽略时区。无论本地时区和 Date 对象本身的时区如何，组件始终按照 UTC+0 时间来处理。因此，如果需要按照特定时区或本地时区来处理时间，请使用动态模板。
 
 ```javascript
-import { hh } from 'clock-reader'
-console.log(hh(new Date('1970-01-01T12:00:00Z')))       // 12
-console.log(hh(new Date('1970-01-01T12:00:00+0800')))   // 04
+import { compile, clockReader, hh } from '.'
+
+const t = new Date('1970-01-01T12:00:00+0800')  // 04:00:00Z
+console.log(hh(t))                              // 04
+console.log(compile(clockReader`${hh}`, +8)(t)) // 12
+console.log(compile(clockReader`${hh}`)(t))     // 本地时区 + 4
 ```
 
-3. 动态模板不考虑 Date 对象自己的时区，所以如果在模板中包含时区相关内容，应调用函数而非直接传入函数。
+3. 动态模板不考虑 Date 对象本身的时区，因此，如果模板中包含时区相关内容，应调用函数而非直接传入函数。
 
 ```javascript
 import { compile, clockReader, szzzz } from 'clock-reader'
-console.log(compile(clockReader`给定时区：${szzzz(+8)}，本地时区：${szzzz()}`, +8)(0))
+
+const tz = +8
+console.log(compile(clockReader`给定时区：${szzzz(tz)}，本地时区：${szzzz()}`, tz)(0))
 ```
